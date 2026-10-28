@@ -14,10 +14,8 @@ from io import BytesIO
 from typing import Any, Optional, Tuple
 
 import requests
-import urllib3
 from base64 import b64encode
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from colorthief import ColorThief
 from flask import Flask, Response, render_template, request, redirect
 
@@ -61,7 +59,7 @@ class ImageData:
         """Fetch image bytes from URL."""
         if self._bytes is None:
             try:
-                response = requests.get(self.url, timeout=10, verify=False)
+                response = requests.get(self.url, timeout=10)
                 response.raise_for_status()
                 self._bytes = response.content
             except requests.RequestException as e:

@@ -134,7 +134,6 @@ def _fetch_album_art_from_deezer(artist_name: str, track_name: str) -> str:
             lastfm_config.deezer_search_url,
             params=params,
             timeout=5,
-            verify=False,
         )
 
         if response.ok:
@@ -152,7 +151,6 @@ def _fetch_album_art_from_deezer(artist_name: str, track_name: str) -> str:
             lastfm_config.deezer_search_url,
             params=params,
             timeout=5,
-            verify=False,
         )
 
         if response.ok:
@@ -194,7 +192,6 @@ def _api_get(params: dict[str, Any]) -> dict[str, Any]:
             lastfm_config.api_url,
             params=params,
             timeout=10,
-            verify=False,
         )
 
         if not response.ok:
