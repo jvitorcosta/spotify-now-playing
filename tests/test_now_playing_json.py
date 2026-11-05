@@ -17,8 +17,14 @@ class Fake:
         return self.result
 
 
+def no_network(url, timeout):
+    raise orchestrator.requests.RequestException("no network in tests")
+
+
 def client(monkeypatch, service):
     monkeypatch.setattr(orchestrator, "get_active_service", lambda: ("spotify", service))
+    if orchestrator.requests.get is orchestrator.requests.api.get:  # a test's own stub wins
+        monkeypatch.setattr(orchestrator.requests, "get", no_network)
     return orchestrator.app.test_client()
 
 
@@ -70,3 +76,39 @@ def test_spotify_latest_picks_the_most_recent_track(monkeypatch):
         with pytest.raises(LookupError):
             spotify.get_now_playing(latest=True)
     assert set(picked) == {"song 0"}
+
+
+class Img:
+    def __init__(self, body, ctype):
+        self.content, self.headers = body, {"Content-Type": ctype}
+
+    def raise_for_status(self):
+        pass
+
+
+def test_cover_is_also_sent_inline(monkeypatch):
+    # The site shows the cover from this data URI, so visitors' browsers never call Spotify's CDN.
+    calls = []
+
+    def get(url, timeout):
+        calls.append((url, timeout))
+        return Img(b"\xff\xd8jpeg", "image/jpeg")
+
+    monkeypatch.setattr(orchestrator.requests, "get", get)
+    body = client(monkeypatch, Fake(TRACK)).get("/api/now-playing.json").get_json()
+    assert body["cover_data"] == "data:image/jpeg;base64,/9hqcGVn"
+    assert calls == [("https://i.scdn.co/image/abc", 2)]
+
+
+def test_cover_data_left_out_when_the_image_fails(monkeypatch):
+    def get(url, timeout):
+        raise orchestrator.requests.RequestException("timeout")
+
+    monkeypatch.setattr(orchestrator.requests, "get", get)
+    r = client(monkeypatch, Fake(TRACK)).get("/api/now-playing.json")
+    assert r.status_code == 200 and "cover_data" not in r.get_json()
+
+
+def test_cover_data_left_out_for_a_non_image(monkeypatch):
+    monkeypatch.setattr(orchestrator.requests, "get", lambda url, timeout: Img(b"<html>", "text/html"))
+    assert "cover_data" not in client(monkeypatch, Fake(TRACK)).get("/api/now-playing.json").get_json()
