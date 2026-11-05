@@ -30,7 +30,8 @@ def test_returns_track_as_json(monkeypatch):
 
 def test_service_error_is_503_json_with_cors(monkeypatch):
     r = client(monkeypatch, Fake(exc=RuntimeError("boom"))).get("/api/now-playing.json")
-    assert r.status_code == 503 and "error" in r.get_json()
+    assert r.status_code == 503
+    assert r.get_json() == {"error": "now playing unavailable"}  # never the internal error text
     assert r.headers["Access-Control-Allow-Origin"] == "https://jvitorcosta.github.io"
 
 

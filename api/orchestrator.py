@@ -10,6 +10,7 @@ import colorsys
 import json
 import os
 import random
+import sys
 from io import BytesIO
 from typing import Any, Optional, Tuple
 
@@ -683,7 +684,9 @@ def now_playing_json() -> Response:
         )
         resp.headers["Cache-Control"] = "s-maxage=10"
     except Exception as e:
-        resp = jsonify({"error": str(e)})
+        # Public endpoint: log the detail, return a generic message.
+        print(f"now-playing.json failed: {e!r}", file=sys.stderr)
+        resp = jsonify({"error": "now playing unavailable"})
         resp.status_code = 503
     resp.headers["Access-Control-Allow-Origin"] = "https://jvitorcosta.github.io"
     return resp
