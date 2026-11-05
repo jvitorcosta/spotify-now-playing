@@ -17,3 +17,6 @@ dependencies = [
 [tool.vercel]
 # Vercel no longer finds the Flask app on its own; point it at api/orchestrator.py
 entrypoint = "api.orchestrator:app"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]

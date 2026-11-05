@@ -10,6 +10,7 @@ import colorsys
 import json
 import os
 import random
+import sys
 from io import BytesIO
 from typing import Any, Optional, Tuple
 
@@ -17,7 +18,7 @@ import requests
 from base64 import b64encode
 
 from colorthief import ColorThief
-from flask import Flask, Response, render_template, request, redirect
+from flask import Flask, Response, jsonify, render_template, request, redirect
 
 from .config import (
     ColorPalette,
@@ -664,6 +665,31 @@ def redirect_to_song() -> Response:
         pass
 
     return redirect(fallback_url)
+
+
+@app.route("/api/now-playing.json")
+def now_playing_json() -> Response:
+    """JSON now-playing endpoint for the personal website."""
+    try:
+        _, service = get_active_service()
+        track = service.get_now_playing(latest=True)
+        resp = jsonify(
+            {
+                "playing": bool(track.get("is_playing")),
+                "title": track.get("track_name", ""),
+                "artist": track.get("artist_name", ""),
+                "cover": track.get("album_art_url", ""),
+                "url": track.get("track_url", ""),
+            }
+        )
+        resp.headers["Cache-Control"] = "s-maxage=10"
+    except Exception as e:
+        # Public endpoint: log the detail, return a generic message.
+        print(f"now-playing.json failed: {e!r}", file=sys.stderr)
+        resp = jsonify({"error": "now playing unavailable"})
+        resp.status_code = 503
+    resp.headers["Access-Control-Allow-Origin"] = "https://jvitorcosta.github.io"
+    return resp
 
 
 @app.route("/health")

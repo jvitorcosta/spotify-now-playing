@@ -353,9 +353,12 @@ def _extract_track_info(track: dict[str, Any]) -> TrackInfo:
     )
 
 
-def get_now_playing() -> dict[str, Any]:
+def get_now_playing(latest: bool = False) -> dict[str, Any]:
     """
     Get the currently playing or most recently played track from Last.fm.
+
+    Args:
+        latest: Accepted for parity with Spotify; Last.fm always returns the most recent track.
     
     Returns:
         A normalized track object with the following structure:
