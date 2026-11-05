@@ -280,9 +280,13 @@ def _extract_track_info(item: dict[str, Any], is_playing: bool) -> TrackInfo:
     )
 
 
-def get_now_playing() -> dict[str, Any]:
+def get_now_playing(latest: bool = False) -> dict[str, Any]:
     """
     Get the currently playing or most recently played track from Spotify.
+
+    Args:
+        latest: When nothing is playing, return the most recent track instead of
+            a random one of the last 10 (the SVG card picks at random for variety).
     
     Returns:
         A normalized track object with the following structure:
@@ -319,8 +323,8 @@ def get_now_playing() -> dict[str, Any]:
         if not items:
             raise NoTracksError("Spotify")
 
-        # Pick a random recent track for variety
-        random_index = random.randint(0, len(items) - 1)
+        # Most recent first; the SVG card picks a random recent track for variety
+        random_index = 0 if latest else random.randint(0, len(items) - 1)
         item = items[random_index]["track"]
         is_playing = False
 

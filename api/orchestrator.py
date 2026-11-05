@@ -672,7 +672,7 @@ def now_playing_json() -> Response:
     """JSON now-playing endpoint for the personal website."""
     try:
         _, service = get_active_service()
-        track = service.get_now_playing()
+        track = service.get_now_playing(latest=True)
         resp = jsonify(
             {
                 "playing": bool(track.get("is_playing")),
