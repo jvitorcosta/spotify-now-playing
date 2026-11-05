@@ -667,21 +667,38 @@ def redirect_to_song() -> Response:
     return redirect(fallback_url)
 
 
+def cover_data_uri(url: str) -> Optional[str]:
+    """The cover as a data URI, so the website never loads it from Spotify's CDN. None on any failure."""
+    if not url:
+        return None
+    try:
+        response = requests.get(url, timeout=2)
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+    ctype = response.headers.get("Content-Type", "").split(";")[0].strip()
+    if ctype not in ("image/jpeg", "image/png"):
+        return None
+    return f"data:{ctype};base64,{b64encode(response.content).decode('ascii')}"
+
+
 @app.route("/api/now-playing.json")
 def now_playing_json() -> Response:
     """JSON now-playing endpoint for the personal website."""
     try:
         _, service = get_active_service()
         track = service.get_now_playing(latest=True)
-        resp = jsonify(
-            {
-                "playing": bool(track.get("is_playing")),
-                "title": track.get("track_name", ""),
-                "artist": track.get("artist_name", ""),
-                "cover": track.get("album_art_url", ""),
-                "url": track.get("track_url", ""),
-            }
-        )
+        body = {
+            "playing": bool(track.get("is_playing")),
+            "title": track.get("track_name", ""),
+            "artist": track.get("artist_name", ""),
+            "cover": track.get("album_art_url", ""),
+            "url": track.get("track_url", ""),
+        }
+        cover_data = cover_data_uri(body["cover"])
+        if cover_data:
+            body["cover_data"] = cover_data
+        resp = jsonify(body)
         resp.headers["Cache-Control"] = "s-maxage=10"
     except Exception as e:
         # Public endpoint: log the detail, return a generic message.
