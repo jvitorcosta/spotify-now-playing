@@ -656,7 +656,7 @@ def redirect_to_song() -> Response:
 
     try:
         service_name, service = get_active_service()
-        track_data = service.get_now_playing()
+        track_data = service.get_now_playing(latest=True)
         track_url = track_data.get("track_url")
         
         if track_url:

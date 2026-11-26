@@ -59,3 +59,10 @@ def test_service_error_still_returns_a_card(monkeypatch):
 
 def test_route_is_registered():
     assert any(rule.rule == "/api/card.svg" for rule in orchestrator.app.url_map.iter_rules())
+
+
+def test_clicking_the_card_opens_the_song_it_shows(monkeypatch):
+    service = Fake(TRACK)
+    r = client(monkeypatch, service).get("/redirect")
+    assert service.latest is True  # idle: the latest song, as on the card, not a random recent one
+    assert r.status_code == 302 and r.headers["Location"] == TRACK["track_url"]
