@@ -20,6 +20,7 @@ from base64 import b64encode
 from colorthief import ColorThief
 from flask import Flask, Response, jsonify, render_template, request, redirect
 
+from . import card
 from .config import (
     ColorPalette,
     compact_svg_config,
@@ -655,7 +656,7 @@ def redirect_to_song() -> Response:
 
     try:
         service_name, service = get_active_service()
-        track_data = service.get_now_playing()
+        track_data = service.get_now_playing(latest=True)
         track_url = track_data.get("track_url")
         
         if track_url:
@@ -706,6 +707,32 @@ def now_playing_json() -> Response:
         resp = jsonify({"error": "now playing unavailable"})
         resp.status_code = 503
     resp.headers["Access-Control-Allow-Origin"] = "https://jvitorcosta.github.io"
+    return resp
+
+
+@app.route("/api/card.svg")
+def card_svg() -> Response:
+    """The live card of my GitHub profile README: ?theme=dark|light, &wide=1 for the full-width one."""
+    theme = request.args.get("theme", "dark")
+    wide = request.args.get("wide", "") == "1"
+    try:
+        _, service = get_active_service()
+        track = service.get_now_playing(latest=True)
+        svg = card.draw(
+            track.get("track_name", ""),
+            track.get("artist_name", ""),
+            bool(track.get("is_playing")),
+            cover_data_uri(track.get("album_art_url", "")),
+            theme,
+            wide,
+        )
+    except Exception as e:
+        # Always a card, never a broken image; the detail stays in the log.
+        print(f"card.svg failed: {e!r}", file=sys.stderr)
+        svg = card.draw("Spotify is not answering", "", False, None, theme, wide)
+    resp = Response(svg, mimetype="image/svg+xml")
+    # GitHub's image proxy must ask again each time, or the card goes stale.
+    resp.headers["Cache-Control"] = "max-age=0, s-maxage=1"
     return resp
 
 
